@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"github.com/straumur/straumur"
 	"log"
 	"time"
@@ -204,7 +204,16 @@ func (d *PostgresDataSource) wrapTransaction(t TransactionFunc) (err error) {
 	defer func() {
 		if err != nil {
 			tx.Rollback()
-			log.Fatal(err)
+			switch v := err.(type) {
+			case *pq.Error:
+				if v.Code == "23505" {
+					log.Printf("Duplicate insertion detected, %+v", err)
+				} else {
+					log.Fatal(err)
+				}
+			case error:
+				log.Fatal(err.Error())
+			}
 		} else {
 			tx.Commit()
 		}
@@ -271,7 +280,19 @@ func (p *PostgresDataSource) Save(e *straumur.Event) (err error) {
 			if err != nil {
 				return err
 			}
-			return tx.QueryRow(query, args...).Scan(&e.ID, &e.Created, &e.Updated)
+			rows, err := tx.Query(query, args...)
+			if err != nil {
+				return err
+			}
+			for rows.Next() {
+				if err := rows.Scan(&e.ID, &e.Created, &e.Updated); err != nil {
+					return err
+				}
+			}
+			if err := rows.Err(); err != nil {
+				return err
+			}
+			return nil
 		})
 	default:
 		err = p.wrapTransaction(func(tx *sql.Tx) error {
