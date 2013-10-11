@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/straumur/straumur"
 	_ "github.com/lib/pq"
+	"github.com/straumur/straumur"
 	"time"
 )
 
