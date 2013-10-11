@@ -1,12 +1,9 @@
 package postgres_backend
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -65,27 +62,19 @@ func (s ByAge) Less(i, j int) bool {
 
 func globMigrations() (m Migrations, err error) {
 
-	const longForm = "2006-01-02T15-04-05Z.sql"
-	matches, err := filepath.Glob("./migrations/*.sql")
+	const longForm = "2006-01-02T15-04-05Z"
 
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
+	if len(MigrationTuples) == 0 {
+		return m, errors.New("No migrations found!")
 	}
 
-	for _, s := range matches {
+	for key, value := range MigrationTuples {
 
-		datePart := strings.SplitAfterN(s, "-", 2)[1]
-		t, _ := time.Parse(longForm, datePart)
-
-		contents, err := ioutil.ReadFile(s)
+		t, err := time.Parse(longForm, key)
 		if err != nil {
-			panic("unable to read a file")
+			return m, err
 		}
-
-		x := Migration{s, string(contents), t}
-
-		m = append(m, x)
+		m = append(m, Migration{key, value, t})
 	}
 
 	sort.Sort(ByAge{m})
