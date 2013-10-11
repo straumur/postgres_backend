@@ -29,4 +29,4 @@ env:
     - PGVERSION=9.2
 
 script:
- - go test
+ - make
