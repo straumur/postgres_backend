@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/straumur/straumur"
 	_ "github.com/lib/pq"
+	"github.com/straumur/straumur"
 	"log"
 	"time"
 )
