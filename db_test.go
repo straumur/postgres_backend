@@ -1,4 +1,4 @@
-package db
+package postgres_backend
 
 import (
 	"database/sql"
