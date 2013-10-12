@@ -204,16 +204,6 @@ func (d *PostgresDataSource) wrapTransaction(t TransactionFunc) (err error) {
 	defer func() {
 		if err != nil {
 			tx.Rollback()
-			switch v := err.(type) {
-			case *pq.Error:
-				if v.Code == "23505" {
-					log.Printf("Duplicate insertion detected, %+v", err)
-				} else {
-					log.Fatal(err)
-				}
-			case error:
-				log.Fatal(err.Error())
-			}
 		} else {
 			tx.Commit()
 		}
@@ -294,6 +284,7 @@ func (p *PostgresDataSource) Save(e *straumur.Event) (err error) {
 			}
 			return nil
 		})
+
 	default:
 		err = p.wrapTransaction(func(tx *sql.Tx) error {
 			query, args, err := buildUpdateQuery(e)
@@ -302,6 +293,15 @@ func (p *PostgresDataSource) Save(e *straumur.Event) (err error) {
 			}
 			return tx.QueryRow(query, args...).Scan(&e.Updated)
 		})
+	}
+
+	//Set the error to nil if we detect duplicate insertion attempts.
+	switch v := err.(type) {
+	case *pq.Error:
+		if v.Code == "23505" {
+			log.Printf("Duplicate insertion detected, %+v", err)
+			err = nil
+		}
 	}
 
 	return err
