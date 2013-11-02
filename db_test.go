@@ -47,6 +47,7 @@ func TestDB(t *testing.T) {
 }
 
 func TestDuplicateInsertion(t *testing.T) {
+
 	const connection = "dbname=teststream host=localhost sslmode=disable"
 
 	db, err := sql.Open("postgres", connection)

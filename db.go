@@ -4,10 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/howbazaar/loggo"
 	"github.com/lib/pq"
 	"github.com/straumur/straumur"
-	"log"
 	"time"
+)
+
+var (
+	logger = loggo.GetLogger("straumur.postgres")
 )
 
 // Callback for a managed transaction
@@ -123,7 +127,7 @@ func (d *PostgresDataSource) applyMigrations() {
     `)
 
 	if err != nil {
-		log.Fatal(err)
+		logger.Criticalf("Error: %+v", err)
 	}
 
 	canMigrate := false
@@ -144,7 +148,7 @@ func (d *PostgresDataSource) applyMigrations() {
 	m, err := globMigrations()
 
 	if err != nil {
-		log.Fatal(err)
+		logger.Criticalf("Error: %+v", err)
 	}
 
 	//If there were tables, the migration_info
@@ -161,7 +165,7 @@ func (d *PostgresDataSource) applyMigrations() {
 			var t time.Time
 			err = rows.Scan(&t)
 			if err != nil {
-				log.Fatal(err)
+				logger.Criticalf("Error: %+v", err)
 			}
 			//Weird, table created with TZ, but Scan doesn't
 			//add the UTC info
@@ -179,14 +183,14 @@ func (d *PostgresDataSource) applyMigrations() {
 
 			_, err := d.pg.Exec(migration.content)
 			if err != nil {
-				log.Fatal(err)
+				logger.Criticalf("Error: %+v", err)
 			}
 			_, err = d.pg.Exec(`
                 insert into migration_info
                     (created, content)
                 values($1, $2)`, migration.date, migration.content)
 			if err != nil {
-				log.Fatal(err)
+				logger.Criticalf("Error: %+v", err)
 			}
 		}
 	}
@@ -299,7 +303,7 @@ func (p *PostgresDataSource) Save(e *straumur.Event) (err error) {
 	switch v := err.(type) {
 	case *pq.Error:
 		if v.Code == "23505" {
-			log.Printf("Duplicate insertion detected, %+v", err)
+			logger.Warningf("Duplicate insertion detected, %+v", err)
 			err = nil
 		}
 	}
