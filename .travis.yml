@@ -6,6 +6,7 @@ go:
 
 install:
  - go get github.com/lib/pq
+ - go get github.com/howbazaar/loggo
  - go get github.com/straumur/straumur
 
 before_install:
